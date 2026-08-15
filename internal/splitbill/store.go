@@ -90,6 +90,14 @@ func (s *Store) AddBill(groupID string, payer string, amount int64, mode Mode, p
 			return Bill{}, ErrParticipantNotMem
 		}
 	}
+	// 同一账单内参与者不能重复，否则份额计算会对同一人重复扣款。
+	seen := make(map[string]struct{}, len(participants))
+	for _, p := range participants {
+		if _, ok := seen[p.Name]; ok {
+			return Bill{}, ErrDuplicateParticipant
+		}
+		seen[p.Name] = struct{}{}
+	}
 
 	shares, err := ComputeShares(amount, mode, participants)
 	if err != nil {
